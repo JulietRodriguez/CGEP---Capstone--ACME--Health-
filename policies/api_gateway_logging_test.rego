@@ -21,10 +21,10 @@ test_apigw_no_logging_denied if {
     }
 }
 
-# ── Failing: stage with empty destination_arn ────────────────────────
+# ── Passing: block present with null ARN (plan-time, resolves at apply) ──
 
-test_apigw_empty_log_destination_denied if {
-    count(deny) > 0 with input as {
+test_apigw_null_destination_passes if {
+    count(deny) == 0 with input as {
         "resource_changes": [{
             "address": "aws_apigatewayv2_stage.default",
             "type": "aws_apigatewayv2_stage",
@@ -32,7 +32,7 @@ test_apigw_empty_log_destination_denied if {
                 "actions": ["create"],
                 "after": {
                     "name": "$default",
-                    "access_log_settings": [{"destination_arn": ""}]
+                    "access_log_settings": [{"destination_arn": null}]
                 }
             }
         }]

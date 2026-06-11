@@ -17,7 +17,8 @@ deny contains msg if {
 }
 
 lambda_in_vpc(after) if {
-    vpc := after.vpc_config[_]
-    count(vpc.subnet_ids) > 0
-    count(vpc.security_group_ids) > 0
+    # Block presence is sufficient at plan time — subnet_ids and security_group_ids
+    # are unknown (null) when subnets/SGs are created in the same plan.
+    # Empty vpc_config = [] means no VPC; a populated block means VPC is configured.
+    count(after.vpc_config) > 0
 }

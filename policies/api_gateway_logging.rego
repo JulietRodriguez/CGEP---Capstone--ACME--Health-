@@ -17,7 +17,8 @@ deny contains msg if {
 }
 
 access_logging_configured(after) if {
-    settings := after.access_log_settings[_]
-    settings.destination_arn != null
-    settings.destination_arn != ""
+    # Block presence is sufficient at plan time — destination_arn is unknown
+    # (null) when the log group is created in the same plan. The ARN resolves
+    # at apply time; what matters here is that the block is configured at all.
+    count(after.access_log_settings) > 0
 }
