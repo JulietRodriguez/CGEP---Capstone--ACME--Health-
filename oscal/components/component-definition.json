@@ -1,6 +1,6 @@
 {
   "component-definition": {
-    "uuid": "a1b2c3d4-e5f6-4789-8abc-def012345678",
+    "uuid": "7f4e3a2b-5c6d-4e8f-9a1b-2c3d4e5f6a7b",
     "metadata": {
       "title": "Acme Health Patient Intake API — CMMC Level 2 Controls",
       "last-modified": "2026-06-11T00:00:00Z",
@@ -15,7 +15,7 @@
       ],
       "parties": [
         {
-          "uuid": "b2c3d4e5-f6a7-4890-9bcd-ef0123456789",
+          "uuid": "8a9b0c1d-2e3f-4a5b-8c9d-0e1f2a3b4c5d",
           "type": "person",
           "name": "Acme Health GRC Engineering"
         }
@@ -23,7 +23,7 @@
     },
     "components": [
       {
-        "uuid": "c3d4e5f6-a7b8-4901-acde-f01234567890",
+        "uuid": "9b0c1d2e-3f4a-4b5c-9d0e-1f2a3b4c5d6e",
         "type": "service",
         "title": "Patient Intake API",
         "description": "AWS-hosted Patient Intake API for Acme Health. Accepts PHI via POST /intake, stores submissions in DynamoDB, and optionally uploads attachments to S3. The workload runs on AWS Lambda (Python 3.12) behind API Gateway v2, within a customer-managed VPC.",
@@ -63,7 +63,7 @@
         ],
         "control-implementations": [
           {
-            "uuid": "d4e5f6a7-b8c9-4012-bdef-012345678901",
+            "uuid": "0c1d2e3f-4a5b-4c6d-a0e1-2f3a4b5c6d7e",
             "source": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-171/rev3/json/NIST_SP-800-171_rev3_catalog.json",
             "description": "CMMC Level 2 control implementations mapping to NIST SP 800-171 Rev. 3 practices. Evidence is collected automatically by the GRC pipeline and stored in a signed, immutable S3 vault.",
             "props": [
@@ -74,8 +74,8 @@
             ],
             "implemented-requirements": [
               {
-                "uuid": "e5f6a7b8-c9d0-4123-cef0-123456789012",
-                "control-id": "3.1.3",
+                "uuid": "1d2e3f4a-5b6c-4d7e-b1f2-3a4b5c6d7e8f",
+                "control-id": "AC.L2-3.1.3",
                 "description": "Control the flow of CUI in accordance with approved authorizations. The Lambda IAM role is scoped to the minimum actions required: dynamodb:PutItem, dynamodb:GetItem, s3:PutObject. Wildcard actions (dynamodb:*, s3:*) are denied by OPA policy iam_least_privilege.rego. The API Gateway TLS-only bucket policy and VPC boundary enforcement prevent unauthorized data flows.",
                 "props": [
                   {
@@ -94,8 +94,8 @@
                 ]
               },
               {
-                "uuid": "f6a7b8c9-d0e1-4234-def1-234567890123",
-                "control-id": "3.1.5",
+                "uuid": "2e3f4a5b-6c7d-4e8f-a2b3-4c5d6e7f8a9b",
+                "control-id": "AC.L2-3.1.5",
                 "description": "Employ the principle of least privilege, including for specific security functions and privileged accounts. The Lambda execution role grants only the three AWS API calls the function code actually invokes. All other DynamoDB and S3 actions are implicitly denied. Policy iam_least_privilege.rego blocks any plan that re-introduces wildcard actions.",
                 "props": [
                   {
@@ -114,9 +114,9 @@
                 ]
               },
               {
-                "uuid": "a7b8c9d0-e1f2-4345-ef12-345678901234",
-                "control-id": "3.3.1",
-                "description": "Create and retain system audit logs and records to the extent needed to enable monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity. CloudTrail multi-region trail captures all management and S3 data events. API Gateway access logs are sent to CloudWatch. All logs are retained 90–365 days. Logs are immutably stored in dedicated S3 buckets with versioning and KMS encryption.",
+                "uuid": "3f4a5b6c-7d8e-4f9a-b3c4-5d6e7f8a9b0c",
+                "control-id": "AU.L2-3.3.1",
+                "description": "Create and retain system audit logs and records to the extent needed to enable monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity. CloudTrail multi-region trail captures all management and S3 data events. API Gateway access logs are sent to CloudWatch. All logs are retained 90-365 days. Logs are immutably stored in dedicated S3 buckets with versioning and KMS encryption.",
                 "props": [
                   {
                     "name": "terraform-resource",
@@ -144,8 +144,8 @@
                 ]
               },
               {
-                "uuid": "b8c9d0e1-f2a3-4456-f123-456789012345",
-                "control-id": "3.8.9",
+                "uuid": "4a5b6c7d-8e9f-40ab-8c4d-6e7f8a9b0c1d",
+                "control-id": "MP.L2-3.8.9",
                 "description": "Protect the confidentiality of backup CUI at storage locations. S3 uploads bucket versioning is enabled so accidental overwrites produce a recoverable version rather than permanent data loss. DynamoDB point-in-time recovery is enabled. The evidence vault uses S3 Object Lock (GOVERNANCE mode, 365-day default retention) to protect compliance artifacts from deletion.",
                 "props": [
                   {
@@ -169,8 +169,8 @@
                 ]
               },
               {
-                "uuid": "c9d0e1f2-a3b4-4567-0234-567890123456",
-                "control-id": "3.13.1",
+                "uuid": "5b6c7d8e-9f0a-41bc-9d5e-7f8a9b0c1d2e",
+                "control-id": "SC.L2-3.13.1",
                 "description": "Monitor, control, and protect communications at the external boundaries and key internal boundaries of organizational systems. The Lambda function runs in private VPC subnets with no direct internet egress. Gateway VPC endpoints for S3 and DynamoDB keep PHI traffic on the AWS private network. A security group restricts Lambda to HTTPS-only egress.",
                 "props": [
                   {
@@ -199,8 +199,8 @@
                 ]
               },
               {
-                "uuid": "d0e1f2a3-b4c5-4678-1345-678901234567",
-                "control-id": "3.13.8",
+                "uuid": "6c7d8e9f-0a1b-42cd-a6f7-8a9b0c1d2e3f",
+                "control-id": "SC.L2-3.13.8",
                 "description": "Implement cryptographic mechanisms to prevent unauthorized disclosure of CUI during transmission. S3 bucket policies on both the uploads bucket and evidence vault deny any request where aws:SecureTransport = false, ensuring all S3 access uses HTTPS/TLS. API Gateway enforces TLS for all client connections.",
                 "props": [
                   {
@@ -224,8 +224,8 @@
                 ]
               },
               {
-                "uuid": "e1f2a3b4-c5d6-4789-2456-789012345678",
-                "control-id": "3.13.11",
+                "uuid": "7d8e9f0a-1b2c-43de-b7a8-9b0c1d2e3f4a",
+                "control-id": "SC.L2-3.13.11",
                 "description": "Employ FIPS-validated cryptography when used to protect the confidentiality of CUI. All PHI data stores use SSE-KMS with a customer-managed KMS key (aws_kms_key.phi). Key rotation is enabled annually. The CMK is used for: S3 uploads bucket (GAP-01), DynamoDB submissions table (GAP-02), S3 evidence vault, SQS DLQ, CloudTrail. AWS KMS uses FIPS 140-2 validated HSMs.",
                 "props": [
                   {
@@ -240,7 +240,7 @@
                   },
                   {
                     "name": "terraform-resource",
-                    "value": "aws_dynamodb_table.intake (server_side_encryption)",
+                    "value": "aws_dynamodb_table.intake",
                     "class": "control-implementation"
                   },
                   {
@@ -258,9 +258,9 @@
                 ]
               },
               {
-                "uuid": "f2a3b4c5-d6e7-4890-3567-890123456789",
-                "control-id": "3.14.6",
-                "description": "Monitor organizational systems, including the security alerts and advisories, to detect attacks and indicators of potential attacks. Three targeted CloudWatch Alarms route to an SNS security-alerts topic: (1) Lambda error rate ≥ 5 in 2 minutes — detects function failures and injection attempts; (2) DLQ depth > 0 — detects sustained invocation failures after retries; (3) API Gateway 4XX ≥ 50 — detects throttling abuse or scanning. Lambda X-Ray active tracing provides execution-level traces. CloudTrail captures all API-plane changes. Alert routing is defined via aws_sns_topic.security_alerts.",
+                "uuid": "8e9f0a1b-2c3d-44ef-8b9c-0c1d2e3f4a5b",
+                "control-id": "SI.L2-3.14.6",
+                "description": "Monitor organizational systems, including the security alerts and advisories, to detect attacks and indicators of potential attacks. Three targeted CloudWatch Alarms route to an SNS security-alerts topic: (1) Lambda error rate >= 5 in 2 minutes; (2) DLQ depth > 0; (3) API Gateway 4XX >= 50. Lambda X-Ray active tracing provides execution-level traces. CloudTrail captures all API-plane changes.",
                 "props": [
                   {
                     "name": "terraform-resource",
@@ -284,7 +284,7 @@
                   },
                   {
                     "name": "terraform-resource",
-                    "value": "aws_lambda_function.intake (tracing_config.mode=Active)",
+                    "value": "aws_lambda_function.intake",
                     "class": "control-implementation"
                   },
                   {
@@ -306,7 +306,7 @@
     "back-matter": {
       "resources": [
         {
-          "uuid": "a3b4c5d6-e7f8-4901-4678-901234567890",
+          "uuid": "9f0a1b2c-3d4e-45fa-9c0d-1d2e3f4a5b6c",
           "title": "NIST SP 800-171 Rev. 3 OSCAL Catalog",
           "rlinks": [
             {
@@ -316,7 +316,7 @@
           ]
         },
         {
-          "uuid": "b4c5d6e7-f8a9-4012-5789-012345678901",
+          "uuid": "0a1b2c3d-4e5f-46ab-a0d1-2e3f4a5b6c7d",
           "title": "GAPS.md — Intentional Starter Gaps",
           "rlinks": [
             {
@@ -325,7 +325,7 @@
           ]
         },
         {
-          "uuid": "c5d6e7f8-a9b0-4123-6890-123456789012",
+          "uuid": "1b2c3d4e-5f6a-47bc-b1e2-3f4a5b6c7d8e",
           "title": "GRC Pipeline Workflow",
           "rlinks": [
             {
