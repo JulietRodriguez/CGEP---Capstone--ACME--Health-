@@ -1,0 +1,339 @@
+{
+  "component-definition": {
+    "uuid": "a1b2c3d4-e5f6-4789-8abc-def012345678",
+    "metadata": {
+      "title": "Acme Health Patient Intake API — CMMC Level 2 Controls",
+      "last-modified": "2026-06-11T00:00:00Z",
+      "version": "1.0.0",
+      "oscal-version": "1.1.2",
+      "remarks": "GRC controls layered on the cgep-app-starter Patient Intake API. Primary framework: CMMC Level 2 (NIST SP 800-171 Rev. 3). Eight intentional gaps closed via Terraform overrides and OPA policies.",
+      "roles": [
+        {
+          "id": "grc-engineer",
+          "title": "GRC Engineer"
+        }
+      ],
+      "parties": [
+        {
+          "uuid": "b2c3d4e5-f6a7-4890-9bcd-ef0123456789",
+          "type": "person",
+          "name": "Acme Health GRC Engineering"
+        }
+      ]
+    },
+    "components": [
+      {
+        "uuid": "c3d4e5f6-a7b8-4901-acde-f01234567890",
+        "type": "service",
+        "title": "Patient Intake API",
+        "description": "AWS-hosted Patient Intake API for Acme Health. Accepts PHI via POST /intake, stores submissions in DynamoDB, and optionally uploads attachments to S3. The workload runs on AWS Lambda (Python 3.12) behind API Gateway v2, within a customer-managed VPC.",
+        "props": [
+          {
+            "name": "implementation-point",
+            "value": "internal"
+          },
+          {
+            "name": "cloud-deployment-model",
+            "value": "public-cloud"
+          },
+          {
+            "name": "cloud-service-model",
+            "value": "saas"
+          },
+          {
+            "name": "terraform-resource",
+            "value": "aws_lambda_function.intake",
+            "class": "workload"
+          },
+          {
+            "name": "terraform-resource",
+            "value": "aws_apigatewayv2_api.intake",
+            "class": "workload"
+          },
+          {
+            "name": "terraform-resource",
+            "value": "aws_dynamodb_table.intake",
+            "class": "data-store"
+          },
+          {
+            "name": "terraform-resource",
+            "value": "aws_s3_bucket.uploads",
+            "class": "data-store"
+          }
+        ],
+        "control-implementations": [
+          {
+            "uuid": "d4e5f6a7-b8c9-4012-bdef-012345678901",
+            "source": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-171/rev3/json/NIST_SP-800-171_rev3_catalog.json",
+            "description": "CMMC Level 2 control implementations mapping to NIST SP 800-171 Rev. 3 practices. Evidence is collected automatically by the GRC pipeline and stored in a signed, immutable S3 vault.",
+            "props": [
+              {
+                "name": "framework",
+                "value": "CMMC Level 2"
+              }
+            ],
+            "implemented-requirements": [
+              {
+                "uuid": "e5f6a7b8-c9d0-4123-cef0-123456789012",
+                "control-id": "3.1.3",
+                "description": "Control the flow of CUI in accordance with approved authorizations. The Lambda IAM role is scoped to the minimum actions required: dynamodb:PutItem, dynamodb:GetItem, s3:PutObject. Wildcard actions (dynamodb:*, s3:*) are denied by OPA policy iam_least_privilege.rego. The API Gateway TLS-only bucket policy and VPC boundary enforcement prevent unauthorized data flows.",
+                "props": [
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_iam_role_policy.lambda_inline",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "control-gap",
+                    "value": "GAP-07 — closed via main_override.tf"
+                  },
+                  {
+                    "name": "opa-policy",
+                    "value": "policies/iam_least_privilege.rego"
+                  }
+                ]
+              },
+              {
+                "uuid": "f6a7b8c9-d0e1-4234-def1-234567890123",
+                "control-id": "3.1.5",
+                "description": "Employ the principle of least privilege, including for specific security functions and privileged accounts. The Lambda execution role grants only the three AWS API calls the function code actually invokes. All other DynamoDB and S3 actions are implicitly denied. Policy iam_least_privilege.rego blocks any plan that re-introduces wildcard actions.",
+                "props": [
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_iam_role_policy.lambda_inline",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "control-gap",
+                    "value": "GAP-07 — closed via main_override.tf"
+                  },
+                  {
+                    "name": "opa-policy",
+                    "value": "policies/iam_least_privilege.rego"
+                  }
+                ]
+              },
+              {
+                "uuid": "a7b8c9d0-e1f2-4345-ef12-345678901234",
+                "control-id": "3.3.1",
+                "description": "Create and retain system audit logs and records to the extent needed to enable monitoring, analysis, investigation, and reporting of unlawful or unauthorized system activity. CloudTrail multi-region trail captures all management and S3 data events. API Gateway access logs are sent to CloudWatch. All logs are retained 90–365 days. Logs are immutably stored in dedicated S3 buckets with versioning and KMS encryption.",
+                "props": [
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_cloudtrail.main",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_cloudwatch_log_group.api_gateway",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_apigatewayv2_stage.default",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "control-gap",
+                    "value": "GAP-08 — closed via main_override.tf + evidence.tf"
+                  },
+                  {
+                    "name": "opa-policy",
+                    "value": "policies/api_gateway_logging.rego"
+                  }
+                ]
+              },
+              {
+                "uuid": "b8c9d0e1-f2a3-4456-f123-456789012345",
+                "control-id": "3.8.9",
+                "description": "Protect the confidentiality of backup CUI at storage locations. S3 uploads bucket versioning is enabled so accidental overwrites produce a recoverable version rather than permanent data loss. DynamoDB point-in-time recovery is enabled. The evidence vault uses S3 Object Lock (GOVERNANCE mode, 365-day default retention) to protect compliance artifacts from deletion.",
+                "props": [
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_versioning.uploads",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_object_lock_configuration.evidence",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "control-gap",
+                    "value": "GAP-04 — closed via hardening.tf"
+                  },
+                  {
+                    "name": "opa-policy",
+                    "value": "policies/s3_versioning.rego"
+                  }
+                ]
+              },
+              {
+                "uuid": "c9d0e1f2-a3b4-4567-0234-567890123456",
+                "control-id": "3.13.1",
+                "description": "Monitor, control, and protect communications at the external boundaries and key internal boundaries of organizational systems. The Lambda function runs in private VPC subnets with no direct internet egress. Gateway VPC endpoints for S3 and DynamoDB keep PHI traffic on the AWS private network. A security group restricts Lambda to HTTPS-only egress.",
+                "props": [
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_security_group.lambda",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_vpc_endpoint.s3",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_vpc_endpoint.dynamodb",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "control-gap",
+                    "value": "GAP-05 — closed via hardening.tf + main_override.tf"
+                  },
+                  {
+                    "name": "opa-policy",
+                    "value": "policies/lambda_vpc.rego"
+                  }
+                ]
+              },
+              {
+                "uuid": "d0e1f2a3-b4c5-4678-1345-678901234567",
+                "control-id": "3.13.8",
+                "description": "Implement cryptographic mechanisms to prevent unauthorized disclosure of CUI during transmission. S3 bucket policies on both the uploads bucket and evidence vault deny any request where aws:SecureTransport = false, ensuring all S3 access uses HTTPS/TLS. API Gateway enforces TLS for all client connections.",
+                "props": [
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_policy.uploads_tls",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_policy.evidence_tls",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "control-gap",
+                    "value": "GAP-03 — closed via hardening.tf"
+                  },
+                  {
+                    "name": "opa-policy",
+                    "value": "policies/s3_tls_required.rego"
+                  }
+                ]
+              },
+              {
+                "uuid": "e1f2a3b4-c5d6-4789-2456-789012345678",
+                "control-id": "3.13.11",
+                "description": "Employ FIPS-validated cryptography when used to protect the confidentiality of CUI. All PHI data stores use SSE-KMS with a customer-managed KMS key (aws_kms_key.phi). Key rotation is enabled annually. The CMK is used for: S3 uploads bucket (GAP-01), DynamoDB submissions table (GAP-02), S3 evidence vault, SQS DLQ, CloudTrail. AWS KMS uses FIPS 140-2 validated HSMs.",
+                "props": [
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_kms_key.phi",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_s3_bucket_server_side_encryption_configuration.uploads",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_dynamodb_table.intake (server_side_encryption)",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "control-gap",
+                    "value": "GAP-01, GAP-02 — closed via hardening.tf + main_override.tf"
+                  },
+                  {
+                    "name": "opa-policy",
+                    "value": "policies/s3_kms_encryption.rego"
+                  },
+                  {
+                    "name": "opa-policy",
+                    "value": "policies/dynamodb_kms_encryption.rego"
+                  }
+                ]
+              },
+              {
+                "uuid": "f2a3b4c5-d6e7-4890-3567-890123456789",
+                "control-id": "3.14.6",
+                "description": "Monitor organizational systems, including the security alerts and advisories, to detect attacks and indicators of potential attacks. Three targeted CloudWatch Alarms route to an SNS security-alerts topic: (1) Lambda error rate ≥ 5 in 2 minutes — detects function failures and injection attempts; (2) DLQ depth > 0 — detects sustained invocation failures after retries; (3) API Gateway 4XX ≥ 50 — detects throttling abuse or scanning. Lambda X-Ray active tracing provides execution-level traces. CloudTrail captures all API-plane changes. Alert routing is defined via aws_sns_topic.security_alerts.",
+                "props": [
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_cloudwatch_metric_alarm.lambda_errors",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_cloudwatch_metric_alarm.dlq_depth",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_cloudwatch_metric_alarm.api_throttle",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_sns_topic.security_alerts",
+                    "class": "alert-routing"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_lambda_function.intake (tracing_config.mode=Active)",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "terraform-resource",
+                    "value": "aws_sqs_queue.lambda_dlq",
+                    "class": "control-implementation"
+                  },
+                  {
+                    "name": "control-gap",
+                    "value": "GAP-06 — closed via hardening.tf + main_override.tf"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "back-matter": {
+      "resources": [
+        {
+          "uuid": "a3b4c5d6-e7f8-4901-4678-901234567890",
+          "title": "NIST SP 800-171 Rev. 3 OSCAL Catalog",
+          "rlinks": [
+            {
+              "href": "https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-171/rev3/json/NIST_SP-800-171_rev3_catalog.json",
+              "media-type": "application/json"
+            }
+          ]
+        },
+        {
+          "uuid": "b4c5d6e7-f8a9-4012-5789-012345678901",
+          "title": "GAPS.md — Intentional Starter Gaps",
+          "rlinks": [
+            {
+              "href": "../../GAPS.md"
+            }
+          ]
+        },
+        {
+          "uuid": "c5d6e7f8-a9b0-4123-6890-123456789012",
+          "title": "GRC Pipeline Workflow",
+          "rlinks": [
+            {
+              "href": "../../.github/workflows/grc-gate.yml"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

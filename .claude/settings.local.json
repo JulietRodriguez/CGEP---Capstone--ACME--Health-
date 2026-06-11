@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"c:\\\\cgep-app-starter-main\" -Recurse)",
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Sort-Object)",
+      "PowerShell(Get-ChildItem -Path \"c:\\\\cgep-app-starter-main\" -Hidden -Recurse -Force | Where-Object { $_.FullName -notmatch '\\\\.git' } | Select-Object FullName)"
+    ]
+  }
+}

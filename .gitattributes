@@ -1,0 +1,12 @@
+# Ensure scripts are executable on Linux/macOS CI runners
+scripts/*.sh        text eol=lf
+test/*.sh           text eol=lf
+
+# Normalize line endings
+*.tf                text eol=lf
+*.rego              text eol=lf
+*.yml               text eol=lf
+*.yaml              text eol=lf
+*.json              text eol=lf
+*.md                text eol=lf
+*.py                text eol=lf

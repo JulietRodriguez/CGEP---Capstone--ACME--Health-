@@ -1,0 +1,10 @@
+# conftest configuration
+# Run: conftest test terraform/tfplan.json
+# (--policy and --all-namespaces are set here so you don't need to type them)
+
+[runner]
+  [runner.policy]
+    paths = ["policies/"]
+
+[output]
+  format = "stdout"

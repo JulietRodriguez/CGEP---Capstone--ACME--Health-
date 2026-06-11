@@ -1,0 +1,189 @@
+name: GRC Gate
+
+# Trigger on every PR to main (plan + policy check only)
+# and on every push to main (plan + policy + apply + sign + upload).
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  id-token: write   # required for Cosign keyless signing via GitHub OIDC
+  contents: read
+
+env:
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+  TF_VERSION: "1.7.5"
+  CONFTEST_VERSION: "0.50.0"
+  COSIGN_VERSION: "v2.2.3"
+  OPA_VERSION: "v0.63.0"
+
+jobs:
+  grc-gate:
+    name: GRC Compliance Gate
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── Checkout ──────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── AWS credentials via OIDC (no static keys) ─────────────────
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      # ── Terraform setup ───────────────────────────────────────────
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      # ── STEP 1: Plan ──────────────────────────────────────────────
+      - name: Terraform Init
+        working-directory: terraform
+        run: |
+          terraform init \
+            -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}" \
+            -backend-config="region=${{ env.AWS_REGION }}" \
+            -backend-config="dynamodb_table=${{ secrets.TF_LOCK_TABLE }}" \
+            -input=false
+
+      - name: Terraform Validate
+        working-directory: terraform
+        run: terraform validate
+
+      - name: Terraform Plan
+        id: plan
+        working-directory: terraform
+        run: |
+          terraform plan \
+            -out=tfplan.binary \
+            -input=false \
+            -var="aws_region=${{ env.AWS_REGION }}"
+          terraform show -json tfplan.binary > tfplan.json
+          echo "Plan complete. JSON saved to tfplan.json."
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ github.run_id }}
+          path: terraform/tfplan.json
+          retention-days: 90
+
+      # ── STEP 1b: OSCAL validation ─────────────────────────────────
+      - name: Set up Python for trestle
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate OSCAL component with trestle
+        run: |
+          pip install compliance-trestle --quiet
+          trestle validate -f oscal/components/component-definition.json
+          echo "OSCAL component-definition validated."
+
+      # ── STEP 2: Policy check with Conftest ────────────────────────
+      - name: Install OPA
+        run: |
+          curl -sL https://openpolicyagent.org/downloads/${{ env.OPA_VERSION }}/opa_linux_amd64_static \
+            -o /usr/local/bin/opa
+          chmod +x /usr/local/bin/opa
+          opa version
+
+      - name: OPA unit tests
+        run: opa test ./policies --verbose
+
+      - name: Install Conftest
+        run: |
+          curl -sL https://github.com/open-policy-agent/conftest/releases/download/v${{ env.CONFTEST_VERSION }}/conftest_${{ env.CONFTEST_VERSION }}_Linux_x86_64.tar.gz \
+            | tar xz -C /tmp
+          sudo mv /tmp/conftest /usr/local/bin/conftest
+          conftest --version
+
+      - name: Conftest policy gate
+        run: |
+          conftest test terraform/tfplan.json \
+            --policy policies/ \
+            --all-namespaces \
+            --output stdout
+        # Pipeline fails here if any deny rule fires — PR is blocked.
+
+      # ── STEP 3: Apply on merge to main ────────────────────────────
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: terraform
+        run: |
+          terraform apply \
+            -auto-approve \
+            -input=false \
+            -var="aws_region=${{ env.AWS_REGION }}"
+
+      # ── STEP 4: Build and sign evidence bundle ────────────────────
+      - name: Install Cosign
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: ${{ env.COSIGN_VERSION }}
+
+      - name: Build evidence bundle
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: terraform
+        run: |
+          mkdir -p evidence
+          # Capture plan JSON and infra outputs
+          cp tfplan.json evidence/tfplan.json
+          terraform output -json > evidence/outputs.json
+          # Metadata envelope
+          cat > evidence/metadata.json <<EOF
+          {
+            "run_id": "${{ github.run_id }}",
+            "run_number": "${{ github.run_number }}",
+            "git_sha": "${{ github.sha }}",
+            "git_ref": "${{ github.ref }}",
+            "actor": "${{ github.actor }}",
+            "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "workflow": "${{ github.workflow }}"
+          }
+          EOF
+          # Bundle and compute SHA-256
+          tar czf evidence-bundle.tar.gz evidence/
+          sha256sum evidence-bundle.tar.gz | awk '{print $1}' > evidence-bundle.tar.gz.sha256
+          echo "SHA256: $(cat evidence-bundle.tar.gz.sha256)"
+
+      - name: Sign evidence bundle with Cosign (keyless via OIDC)
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: terraform
+        run: |
+          cosign sign-blob \
+            --yes \
+            evidence-bundle.tar.gz \
+            --bundle evidence-bundle.tar.gz.cosign.bundle
+          echo "Bundle signed. Signature recorded in Sigstore transparency log."
+
+      # ── STEP 5: Upload signed bundle to evidence vault ────────────
+      - name: Upload evidence bundle to S3 vault
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        working-directory: terraform
+        run: |
+          EVIDENCE_BUCKET=$(terraform output -raw evidence_bucket)
+          TIMESTAMP=$(date -u +%Y%m%dT%H%M%SZ)
+          RUN_ID="${{ github.run_id }}"
+          PREFIX="runs/${TIMESTAMP}-${RUN_ID}"
+
+          aws s3 cp evidence-bundle.tar.gz \
+            "s3://${EVIDENCE_BUCKET}/${PREFIX}/evidence-bundle.tar.gz" \
+            --metadata "git_sha=${{ github.sha }},run_id=${RUN_ID}"
+
+          aws s3 cp evidence-bundle.tar.gz.sha256 \
+            "s3://${EVIDENCE_BUCKET}/${PREFIX}/evidence-bundle.tar.gz.sha256"
+
+          aws s3 cp evidence-bundle.tar.gz.cosign.bundle \
+            "s3://${EVIDENCE_BUCKET}/${PREFIX}/evidence-bundle.tar.gz.cosign.bundle"
+
+          echo "Evidence uploaded to s3://${EVIDENCE_BUCKET}/${PREFIX}/"
+          echo "EVIDENCE_PREFIX=${PREFIX}" >> $GITHUB_STEP_SUMMARY
+          echo "EVIDENCE_BUCKET=${EVIDENCE_BUCKET}" >> $GITHUB_STEP_SUMMARY
