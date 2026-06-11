@@ -40,7 +40,8 @@ jobs:
         run: |
           pip install compliance-trestle --quiet
           trestle init
-          trestle validate -f oscal/components/component-definition.json
+          trestle import -f oscal/components/component-definition.json -o acme-health-intake
+          trestle validate -t component-definition -n acme-health-intake
           echo "OSCAL component-definition is valid."
 
       - name: Install OPA
