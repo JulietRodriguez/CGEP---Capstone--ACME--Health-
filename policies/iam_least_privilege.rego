@@ -1,22 +1,3 @@
-# METADATA
-# title: IAM Least Privilege — No Wildcard Service Actions
-# description: >
-#   IAM role policies must not grant wildcard service actions such as
-#   dynamodb:* or s3:*. Wildcard actions violate the principle of least
-#   privilege and expand the blast radius of a compromised credential.
-#   Closes GAP-07.
-# custom:
-#   framework: cmmc-l2
-#   controls:
-#     - AC.L2-3.1.5
-#     - AC.L2-3.1.3
-#   nist_ref: "NIST SP 800-171 Rev. 3 — 3.1.3, 3.1.5"
-#   severity: HIGH
-#   gap: GAP-07
-#   remediation: >
-#     Replace dynamodb:* and s3:* with the minimum actions the workload
-#     actually uses (e.g., dynamodb:PutItem, s3:PutObject).
-
 package main
 
 import future.keywords.contains

@@ -1,20 +1,3 @@
-# METADATA
-# title: Lambda Function Must Run in VPC
-# description: >
-#   Lambda functions that process PHI must run inside the VPC to enforce
-#   network boundary protection. A Lambda running in the default
-#   environment has no network-level isolation. Closes GAP-05.
-# custom:
-#   framework: cmmc-l2
-#   controls:
-#     - SC.L2-3.13.1
-#   nist_ref: "NIST SP 800-171 Rev. 3 — 3.13.1"
-#   severity: HIGH
-#   gap: GAP-05
-#   remediation: >
-#     Add a vpc_config block to aws_lambda_function with non-empty
-#     subnet_ids and security_group_ids.
-
 package main
 
 import future.keywords.contains

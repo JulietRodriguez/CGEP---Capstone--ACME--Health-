@@ -1,20 +1,3 @@
-# METADATA
-# title: S3 TLS-Only Bucket Policy
-# description: >
-#   S3 buckets storing PHI must deny any request that does not use TLS
-#   (aws:SecureTransport = false). Plain-HTTP access would expose PHI
-#   in transit. Closes GAP-03.
-# custom:
-#   framework: cmmc-l2
-#   controls:
-#     - SC.L2-3.13.8
-#   nist_ref: "NIST SP 800-171 Rev. 3 — 3.13.8"
-#   severity: HIGH
-#   gap: GAP-03
-#   remediation: >
-#     Add aws_s3_bucket_policy with a Deny statement on Action s3:*
-#     where Condition.Bool["aws:SecureTransport"] = "false".
-
 package main
 
 import future.keywords.contains
