@@ -39,6 +39,7 @@ jobs:
       - name: Validate OSCAL component with trestle
         run: |
           pip install compliance-trestle --quiet
+          trestle init
           trestle validate -f oscal/components/component-definition.json
           echo "OSCAL component-definition is valid."
 
