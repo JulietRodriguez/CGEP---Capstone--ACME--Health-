@@ -39,8 +39,10 @@ jobs:
       - name: Validate OSCAL component with trestle
         run: |
           pip install compliance-trestle --quiet
+          mkdir -p /tmp/trestle-workspace
+          cd /tmp/trestle-workspace
           trestle init
-          trestle import -f oscal/components/component-definition.json -o acme-health-intake
+          trestle import -f "$GITHUB_WORKSPACE/oscal/components/component-definition.json" -o acme-health-intake
           trestle validate -t component-definition -n acme-health-intake
           echo "OSCAL component-definition is valid."
 
