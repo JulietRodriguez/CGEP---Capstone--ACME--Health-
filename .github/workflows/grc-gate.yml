@@ -1,7 +1,5 @@
 name: GRC Gate
 
-# Trigger on every PR to main (plan + policy check only)
-# and on every push to main (plan + policy + apply + sign + upload).
 on:
   pull_request:
     branches: [main]
@@ -20,23 +18,90 @@ env:
   OPA_VERSION: "v0.63.0"
 
 jobs:
-  grc-gate:
-    name: GRC Compliance Gate
+
+  ##################################################################
+  # Job 1 — Static checks (no AWS required)
+  # Runs unconditionally on every push and PR.
+  ##################################################################
+  static-checks:
+    name: "Static Checks (OSCAL + OPA)"
     runs-on: ubuntu-latest
 
     steps:
-      # ── Checkout ──────────────────────────────────────────────────
       - name: Checkout
         uses: actions/checkout@v4
 
-      # ── AWS credentials via OIDC (no static keys) ─────────────────
+      - name: Set up Python for trestle
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Validate OSCAL component with trestle
+        run: |
+          pip install compliance-trestle --quiet
+          trestle validate -f oscal/components/component-definition.json
+          echo "OSCAL component-definition is valid."
+
+      - name: Install OPA
+        run: |
+          curl -sL https://openpolicyagent.org/downloads/${{ env.OPA_VERSION }}/opa_linux_amd64_static \
+            -o /usr/local/bin/opa
+          chmod +x /usr/local/bin/opa
+          opa version
+
+      - name: OPA unit tests
+        run: opa test ./policies --verbose
+
+  ##################################################################
+  # Job 2 — Detect whether AWS secrets are configured.
+  # Secrets cannot be used in job-level `if:` conditions, so we
+  # read the secret inside a shell step and expose a safe boolean.
+  ##################################################################
+  check-aws:
+    name: "Check AWS Secrets"
+    runs-on: ubuntu-latest
+    outputs:
+      configured: ${{ steps.probe.outputs.configured }}
+
+    steps:
+      - name: Probe for AWS_ROLE_ARN secret
+        id: probe
+        env:
+          ROLE_ARN: ${{ secrets.AWS_ROLE_ARN }}
+        run: |
+          if [ -n "$ROLE_ARN" ]; then
+            echo "configured=true"  >> "$GITHUB_OUTPUT"
+            echo "AWS secrets are present — terraform-gate will run."
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "AWS_ROLE_ARN not set — terraform-gate will be skipped."
+            echo "Set the AWS_ROLE_ARN, TF_STATE_BUCKET, and TF_LOCK_TABLE secrets to enable."
+          fi
+
+  ##################################################################
+  # Job 3 — Terraform + policy gate (requires AWS secrets)
+  # Skipped automatically when AWS_ROLE_ARN is not set.
+  # On PR:   Plan → Conftest (blocks non-compliant code)
+  # On main: Plan → Conftest → Apply → Sign → Upload to vault
+  ##################################################################
+  terraform-gate:
+    name: "Terraform + Policy Gate"
+    runs-on: ubuntu-latest
+    needs: [static-checks, check-aws]
+    if: needs.check-aws.outputs.configured == 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── AWS credentials via OIDC ───────────────────────────────────
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
 
-      # ── Terraform setup ───────────────────────────────────────────
+      # ── Terraform ─────────────────────────────────────────────────
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
@@ -65,7 +130,7 @@ jobs:
             -input=false \
             -var="aws_region=${{ env.AWS_REGION }}"
           terraform show -json tfplan.binary > tfplan.json
-          echo "Plan complete. JSON saved to tfplan.json."
+          echo "Plan complete."
 
       - name: Upload plan artifact
         uses: actions/upload-artifact@v4
@@ -74,29 +139,7 @@ jobs:
           path: terraform/tfplan.json
           retention-days: 90
 
-      # ── STEP 1b: OSCAL validation ─────────────────────────────────
-      - name: Set up Python for trestle
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-
-      - name: Validate OSCAL component with trestle
-        run: |
-          pip install compliance-trestle --quiet
-          trestle validate -f oscal/components/component-definition.json
-          echo "OSCAL component-definition validated."
-
       # ── STEP 2: Policy check with Conftest ────────────────────────
-      - name: Install OPA
-        run: |
-          curl -sL https://openpolicyagent.org/downloads/${{ env.OPA_VERSION }}/opa_linux_amd64_static \
-            -o /usr/local/bin/opa
-          chmod +x /usr/local/bin/opa
-          opa version
-
-      - name: OPA unit tests
-        run: opa test ./policies --verbose
-
       - name: Install Conftest
         run: |
           curl -sL https://github.com/open-policy-agent/conftest/releases/download/v${{ env.CONFTEST_VERSION }}/conftest_${{ env.CONFTEST_VERSION }}_Linux_x86_64.tar.gz \
@@ -110,7 +153,6 @@ jobs:
             --policy policies/ \
             --all-namespaces \
             --output stdout
-        # Pipeline fails here if any deny rule fires — PR is blocked.
 
       # ── STEP 3: Apply on merge to main ────────────────────────────
       - name: Terraform Apply
@@ -134,10 +176,8 @@ jobs:
         working-directory: terraform
         run: |
           mkdir -p evidence
-          # Capture plan JSON and infra outputs
           cp tfplan.json evidence/tfplan.json
           terraform output -json > evidence/outputs.json
-          # Metadata envelope
           cat > evidence/metadata.json <<EOF
           {
             "run_id": "${{ github.run_id }}",
@@ -149,7 +189,6 @@ jobs:
             "workflow": "${{ github.workflow }}"
           }
           EOF
-          # Bundle and compute SHA-256
           tar czf evidence-bundle.tar.gz evidence/
           sha256sum evidence-bundle.tar.gz | awk '{print $1}' > evidence-bundle.tar.gz.sha256
           echo "SHA256: $(cat evidence-bundle.tar.gz.sha256)"
@@ -177,10 +216,8 @@ jobs:
           aws s3 cp evidence-bundle.tar.gz \
             "s3://${EVIDENCE_BUCKET}/${PREFIX}/evidence-bundle.tar.gz" \
             --metadata "git_sha=${{ github.sha }},run_id=${RUN_ID}"
-
           aws s3 cp evidence-bundle.tar.gz.sha256 \
             "s3://${EVIDENCE_BUCKET}/${PREFIX}/evidence-bundle.tar.gz.sha256"
-
           aws s3 cp evidence-bundle.tar.gz.cosign.bundle \
             "s3://${EVIDENCE_BUCKET}/${PREFIX}/evidence-bundle.tar.gz.cosign.bundle"
 
