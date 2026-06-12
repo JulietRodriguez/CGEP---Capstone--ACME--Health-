@@ -59,8 +59,6 @@ resource "aws_lambda_function" "intake" {
   tracing_config {
     mode = "Active"
   }
-
-  reserved_concurrent_executions = 10
 }
 
 # ── GAP-07: IAM least-privilege — replaces dynamodb:* + s3:* ─────────
