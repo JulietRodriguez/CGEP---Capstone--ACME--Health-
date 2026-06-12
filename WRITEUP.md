@@ -105,11 +105,11 @@ Gaps that required **modifying existing resource blocks** (DynamoDB encryption, 
 
 **Trade-off:** A workload-side compromise with sufficient IAM privilege could theoretically delete evidence. The clean architecture uses a separate AWS account for the vault with a cross-account bucket policy. For a 30-day capstone with a single sandbox account, the single-account design is acceptable; the Object Lock retention and KMS key policy provide the primary tamper-resistance. The multi-account design is documented in "Future Work."
 
-### 6. Reserved concurrency = 10
+### 6. Reserved concurrency
 
-**Decision:** Lambda reserved concurrency set to 10.
+**Decision:** Reserved concurrency is not set in this baseline (omitted from the override).
 
-**Rationale:** Closes GAP-06's availability risk (unconstrained Lambda scaling can exhaust account concurrency). 10 concurrent executions is sufficient for a 50-person telehealth company's intake volume and provides a hard ceiling that limits both cost runaway and potential DDoS amplification via the API.
+**Rationale:** The sandbox AWS account has a low total concurrency limit that prevents reserving a fixed number of executions without violating the minimum unreserved concurrency floor of 10. In a production account with the default 1000-concurrency limit, setting `reserved_concurrent_executions = 10` would be appropriate to cap cost and limit DDoS amplification. GAP-06 is still closed via the DLQ (failed invocations are captured), X-Ray tracing, and the three CloudWatch alarms.
 
 ---
 
