@@ -62,7 +62,7 @@ resource "aws_s3_bucket_versioning" "uploads" {
 
 resource "aws_security_group" "lambda" {
   name        = "${local.name_prefix}-lambda-sg-${local.suffix}"
-  description = "Lambda in VPC — HTTPS egress only via VPC endpoints"
+  description = "Lambda in VPC - HTTPS egress only via VPC endpoints"
   vpc_id      = aws_vpc.main.id
 
   egress {
@@ -214,7 +214,7 @@ resource "aws_sns_topic_policy" "security_alerts" {
 # Maps to SI.L2-3.14.6 — detect anomalous function failures in real time.
 resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   alarm_name          = "${local.name_prefix}-lambda-errors-${local.suffix}"
-  alarm_description   = "[CMMC SI.L2-3.14.6] Lambda error rate exceeded threshold — possible attack or misconfiguration."
+  alarm_description   = "[CMMC SI.L2-3.14.6] Lambda error rate exceeded threshold - possible attack or misconfiguration."
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = 2
   metric_name         = "Errors"
@@ -241,7 +241,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
 # Maps to SI.L2-3.14.6 — unprocessed DLQ messages indicate sustained failures.
 resource "aws_cloudwatch_metric_alarm" "dlq_depth" {
   alarm_name          = "${local.name_prefix}-dlq-depth-${local.suffix}"
-  alarm_description   = "[CMMC SI.L2-3.14.6] Lambda DLQ depth > 0 — invocations are failing after retries."
+  alarm_description   = "[CMMC SI.L2-3.14.6] Lambda DLQ depth > 0 - invocations are failing after retries."
   comparison_operator = "GreaterThanThreshold"
   evaluation_periods  = 1
   metric_name         = "ApproximateNumberOfMessagesVisible"
@@ -267,7 +267,7 @@ resource "aws_cloudwatch_metric_alarm" "dlq_depth" {
 # Maps to AU.L2-3.3.1 + SI.L2-3.14.6
 resource "aws_cloudwatch_metric_alarm" "api_throttle" {
   alarm_name          = "${local.name_prefix}-api-throttle-${local.suffix}"
-  alarm_description   = "[CMMC SI.L2-3.14.6 / AU.L2-3.3.1] API Gateway throttling exceeded — potential DoS or abusive client."
+  alarm_description   = "[CMMC SI.L2-3.14.6 / AU.L2-3.3.1] API Gateway throttling exceeded - potential DoS or abusive client."
   comparison_operator = "GreaterThanOrEqualToThreshold"
   evaluation_periods  = 2
   metric_name         = "4XXError"

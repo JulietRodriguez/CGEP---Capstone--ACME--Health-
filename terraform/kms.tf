@@ -7,7 +7,7 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_kms_key" "phi" {
-  description             = "CMK for Acme Health PHI — S3 uploads, DynamoDB submissions, evidence vault"
+  description             = "CMK for Acme Health PHI - S3 uploads, DynamoDB submissions, evidence vault"
   enable_key_rotation     = true
   deletion_window_in_days = 30
 
