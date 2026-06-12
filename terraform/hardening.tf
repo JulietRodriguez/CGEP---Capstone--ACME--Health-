@@ -188,9 +188,8 @@ resource "aws_sns_topic" "security_alerts" {
   kms_master_key_id = aws_kms_key.phi.id
 
   tags = {
-    Name       = "${local.name_prefix}-security-alerts"
-    Control    = "CMMC-SI.L2-3.14.6"
-    CostCenter = "ConMon"
+    Name    = "${local.name_prefix}-security-alerts"
+    Control = "CMMC-SI.L2-3.14.6"
   }
 }
 
