@@ -1,17 +1,17 @@
 {
-  "system_name": "ACME Health Analytics Platform",
+  "system_name": "Sample Analytics Platform",
   "description": "Sample JSON inventory of AWS resources for OSCAL SSP generation.",
   "resources": [
     {
       "type": "aws_s3_bucket",
       "name": "analytics-raw",
-      "arn": "arn:aws:s3:::acme-analytics-raw",
+      "arn": "arn:aws:s3:::my-org-analytics-raw",
       "region": "us-west-2"
     },
     {
       "type": "aws_s3_bucket",
       "name": "analytics-curated",
-      "arn": "arn:aws:s3:::acme-analytics-curated",
+      "arn": "arn:aws:s3:::my-org-analytics-curated",
       "region": "us-west-2"
     },
     {

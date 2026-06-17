@@ -51,7 +51,7 @@ def _metadata(system_name: str, timestamp: str) -> dict:
             {
                 "uuid": _uuid_for("party", "owning-org"),
                 "type": "organization",
-                "name": "Owning Organization (TBD)",
+                "name": "My Organization",
             }
         ],
         "responsible-parties": [

@@ -23,6 +23,10 @@ htmlcov/
 ssp.json
 *.ssp.json
 
+# Real Terraform state is ignored repo-wide, but the bundled demo
+# state file is an intentional example and must be tracked.
+!examples/terraform.tfstate
+
 # OS / editor
 .DS_Store
 .idea/

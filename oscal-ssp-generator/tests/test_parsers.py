@@ -16,7 +16,7 @@ def test_parse_terraform_state(tfstate_path):
     assert isinstance(inv, Inventory)
     assert inv.source == "terraform"
     # System name pulled from outputs.
-    assert inv.system_name == "ACME Health Patient Portal"
+    assert inv.system_name == "Sample AWS Environment"
     assert "aws_s3_bucket" in inv.resource_types()
     assert len(inv) == 10
 
@@ -24,14 +24,14 @@ def test_parse_terraform_state(tfstate_path):
 def test_terraform_resources_capture_identifier(tfstate_path):
     inv = parse_terraform_state(tfstate_path)
     s3 = next(r for r in inv.resources if r.resource_type == "aws_s3_bucket")
-    assert s3.identifier == "arn:aws:s3:::acme-health-patient-data"
+    assert s3.identifier == "arn:aws:s3:::my-org-app-data"
     assert s3.region == "us-east-1"
 
 
 def test_parse_json_inventory(inventory_path):
     inv = parse_json_inventory(inventory_path)
     assert inv.source == "json_inventory"
-    assert inv.system_name == "ACME Health Analytics Platform"
+    assert inv.system_name == "Sample Analytics Platform"
     counts = inv.count_by_type()
     assert counts["aws_s3_bucket"] == 2
 
