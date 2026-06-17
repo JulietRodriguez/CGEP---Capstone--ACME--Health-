@@ -1,0 +1,75 @@
+{
+  "system_name": "ACME Health Analytics Platform",
+  "description": "Sample JSON inventory of AWS resources for OSCAL SSP generation.",
+  "resources": [
+    {
+      "type": "aws_s3_bucket",
+      "name": "analytics-raw",
+      "arn": "arn:aws:s3:::acme-analytics-raw",
+      "region": "us-west-2"
+    },
+    {
+      "type": "aws_s3_bucket",
+      "name": "analytics-curated",
+      "arn": "arn:aws:s3:::acme-analytics-curated",
+      "region": "us-west-2"
+    },
+    {
+      "type": "aws_kms_key",
+      "name": "analytics-key",
+      "arn": "arn:aws:kms:us-west-2:444455556666:key/abcd1234-5678-90ab-cdef-1234567890ab",
+      "region": "us-west-2"
+    },
+    {
+      "type": "aws_security_group",
+      "name": "analytics-sg",
+      "id": "sg-0fedcba9876543210",
+      "region": "us-west-2"
+    },
+    {
+      "type": "aws_iam_role",
+      "name": "analytics-pipeline",
+      "arn": "arn:aws:iam::444455556666:role/analytics-pipeline"
+    },
+    {
+      "type": "aws_iam_policy",
+      "name": "analytics-readonly",
+      "arn": "arn:aws:iam::444455556666:policy/analytics-readonly"
+    },
+    {
+      "type": "aws_cloudtrail",
+      "name": "analytics-trail",
+      "arn": "arn:aws:cloudtrail:us-west-2:444455556666:trail/analytics-trail",
+      "region": "us-west-2"
+    },
+    {
+      "type": "aws_config_configuration_recorder",
+      "name": "default",
+      "region": "us-west-2"
+    },
+    {
+      "type": "aws_wafv2_web_acl",
+      "name": "analytics-waf",
+      "arn": "arn:aws:wafv2:us-west-2:444455556666:regional/webacl/analytics-waf/abcd",
+      "region": "us-west-2"
+    },
+    {
+      "type": "aws_rds_cluster",
+      "name": "analytics-warehouse",
+      "arn": "arn:aws:rds:us-west-2:444455556666:cluster:analytics-warehouse",
+      "region": "us-west-2"
+    },
+    {
+      "type": "aws_backup_plan",
+      "name": "daily-backups",
+      "arn": "arn:aws:backup:us-west-2:444455556666:backup-plan:daily-backups",
+      "region": "us-west-2"
+    },
+    {
+      "type": "aws_acm_certificate",
+      "name": "analytics-cert",
+      "arn": "arn:aws:acm:us-west-2:444455556666:certificate/1111-2222-3333",
+      "region": "us-west-2"
+    }
+  ]
+}
